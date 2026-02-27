@@ -44,10 +44,10 @@ make clean     # remove qr.bin and labels.txt
 
 Set the following zero-page locations before calling `JSR $6000`:
 
-| ZP Address | Label     | Width | Description                                   |
-|------------|-----------|-------|-----------------------------------------------|
-| `$EB–$EC`  | `ZP_SRC`  | 2 B   | Lo/hi address of the input data buffer        |
-| `$ED–$EE`  | `ZP_LEN`  | 2 B   | Lo/hi length of input data in bytes           |
+| ZP Address | Label     | Width | Description                                        |
+|------------|-----------|-------|----------------------------------------------------|
+| `$EB–$EC`  | `ZP_SRC`  | 2 B   | Lo/hi address of the input data buffer             |
+| `$ED–$EE`  | `ZP_LEN`  | 2 B   | Lo/hi length of input data in bytes                |
 | `$EF`      | `ZP_PAGE` | 1 B   | `0` = HGR page 1 (`$2000`), `1` = page 2 (`$4000`) |
 
 **Returns:** carry clear on success; carry set with `A = $FF` if data is too long for any
@@ -81,6 +81,18 @@ BCS error     ; carry set = data too long
 60  CALL 24576                  : REM JSR $6000
 ```
 
+## Direct execution via Monitor
+
+Load the program, set up the zero-page registers and start it.  This example sets the data starting at $300, 5 bytes long, using hires page 1:
+
+```
+]BLOAD QR.BIN,A$6000
+]CALL-151
+*EB:0 3 5 0 0
+*300:68 65 6C 6C 6F
+*6000G      ; from monitor, with ZP already set
+```
+
 ## Memory Layout
 
 | Region             | Address Range     | Size   | Description                              |
@@ -99,8 +111,8 @@ BCS error     ; carry set = data too long
 
 | Address      | Label       | Width | Purpose                                      |
 |--------------|-------------|-------|----------------------------------------------|
-| `$06`–`$07`  | `ZP_PTR`    | 2 B   | General pointer (owned by `INVERT_PIXEL`)     |
-| `$08`–`$09`  | `ZP_PTR2`   | 2 B   | Second pointer / bit-mask for `PACK_BITS`     |
+| `$06`–`$07`  | `ZP_PTR`    | 2 B   | General pointer (owned by `INVERT_PIXEL`)    |
+| `$08`–`$09`  | `ZP_PTR2`   | 2 B   | Second pointer / bit-mask for `PACK_BITS`    |
 | `$0A`–`$0B`  | `ALN_BASE`  | 2 B   | Alignment position list pointer              |
 | `$CE`        | `ZP_ROW`    | 1 B   | Current QR row                               |
 | `$CF`        | `ZP_COL`    | 1 B   | Current QR column                            |
@@ -222,7 +234,7 @@ Log and antilog (exp) tables are computed at runtime into `$9F00` and `$A000` to
 |---------------|-----------------------------------------------------------------|
 | `qr.asm`      | Entry point (`QR_GENERATE`), pipeline sequencing, `QR_RS_ALL_BLOCKS` |
 | `zp.asm`      | Zero-page equates (no bytes emitted)                            |
-| `hgr.asm`     | `HGR_INIT`, `INVERT_PIXEL`, `HGR_FILLROW`                      |
+| `hgr.asm`     | `HGR_INIT`, `INVERT_PIXEL`, `HGR_FILLROW`                       |
 | `rs.asm`      | `GF_BUILD_TABLES`, `GF_MUL`, `RS_GEN_POLY`, `RS_ENCODE_BLOCK`, `RS_COPY_EC` |
 | `matrix.asm`  | `IS_FUNC_MODULE`, `IS_ALIGN_MODULE`, `DRAW_FINDER`, `DRAW_FINDERS`, `DRAW_TIMING`, `DRAW_ALIGNMENT`, `DRAW_DARKMOD` |
 | `encode.asm`  | `QR_SELECT_VER`, `PACK_BITS`, `QR_ENCODE_DATA`, `MUL8`, `QR_INTERLEAVE` |
@@ -241,22 +253,3 @@ Log and antilog (exp) tables are computed at runtime into `$9F00` and `$A000` to
 - `QR_INTERLEAVE` advances the source pointer per block for every `j` position regardless
   of whether that block contributed a byte at that `j` — this matches the spec for
   contiguous-block memory layout but differs from a pointer-array approach
-
-## Loading on Real Hardware
-
-```
-BLOAD QR.BIN,A$6000
-```
-
-Or from the monitor:
-
-```
-]CALL -151
-*6000.6EC2R QR.BIN
-```
-
-After loading, set up the zero-page registers and call:
-
-```
-*EBG      ; from monitor, with ZP already set
-```
