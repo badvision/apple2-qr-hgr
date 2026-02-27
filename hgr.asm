@@ -1,6 +1,10 @@
 ; hgr.asm — HGR init and pixel routines
 ; Assembled as part of qr.asm (included, not standalone).
 
+; Display placement offsets — shift the QR origin from the screen corner
+QR_ROW_OFFSET = 7    ; rows down from top of HGR screen
+QR_COL_OFFSET = 7    ; bytes (49 pixels) right from left edge
+
 ; ── HGR_INIT ─────────────────────────────────────────────────────
 ; Call Apple II firmware to clear & show the correct HGR page.
 ; ZP_PAGE = 0 → HGR page 1 ($2000), firmware sets HPAG ($E6) = $20
@@ -36,15 +40,19 @@ HGR_INIT_P2:
 ;   bit_mask  = 1 << (ZP_COL mod 7)
 
 INVERT_PIXEL:
-        ; -- compute row address --
+        ; -- compute row address (apply QR_ROW_OFFSET display offset) --
         LDA     ZP_ROW
-        AND     #$07            ; y_lo = ZP_ROW & 7
+        CLC
+        ADC     #QR_ROW_OFFSET  ; shift display down by QR_ROW_OFFSET rows
+        AND     #$07            ; y_lo = (ZP_ROW + offset) & 7
         ASL                     ; y_lo * 2
         ASL                     ; y_lo * 4
         STA     ZP_TMP          ; save y_lo*4
 
         LDA     ZP_ROW
-        LSR                     ; ZP_ROW >> 1
+        CLC
+        ADC     #QR_ROW_OFFSET  ; shift display down by QR_ROW_OFFSET rows
+        LSR                     ; >> 1
         LSR                     ; >> 2
         LSR                     ; >> 3  = y_hi (0-23)
         TAX                     ; X = y_hi (index into row tables)
@@ -83,10 +91,11 @@ INVERT_PIXEL:
         ; bit index A: build mask 1 << A
         TAY                     ; Y = bit position (0-6)
 
-        ; -- add byte offset to ZP_PTR --
-        TXA                     ; byte offset
+        ; -- add byte offset + QR_COL_OFFSET to ZP_PTR --
+        TXA                     ; byte offset from QR column
         CLC
-        ADC     ZP_PTR          ; add to lo byte
+        ADC     #QR_COL_OFFSET  ; shift display right by QR_COL_OFFSET bytes (49 pixels)
+        ADC     ZP_PTR          ; add to lo byte (carry from prev add is always 0)
         STA     ZP_PTR
         BCC     .no_carry
         INC     ZP_PTR+1
