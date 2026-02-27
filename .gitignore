@@ -1,0 +1,6 @@
+*.bin
+labels.txt
+__pycache__/
+*.pyc
+test_qr.py
+simulate_scan.py
