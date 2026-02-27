@@ -13,6 +13,20 @@ HGR display without any host-side processing. Key properties:
 - Supports up to **2953 bytes** of input data (V40 capacity at EC level L)
 - Reed-Solomon error correction computed entirely in 6502 code using GF(256)
 
+## Examples
+
+### V2 — Small QR code (up to 32 bytes)
+
+![V2 QR code on Apple II HGR screen](examples/hgr_screen_v1.png)
+
+*"GITHUB.COM/BADVISION" encoded as a V2 QR code, rendered at 1:1 pixel-to-module ratio on the Apple II 280×192 HGR display.*
+
+### V40 — Maximum size (up to 2953 bytes)
+
+![V40 QR code on Apple II HGR screen](examples/hgr_screen_v40.png)
+
+*2860-byte payload encoded as a V40 (177×177) QR code, nearly filling the entire Apple II HGR screen.*
+
 ## Building
 
 ```
