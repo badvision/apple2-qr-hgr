@@ -9,9 +9,13 @@ PC      = 6000
 DEPS    = qr.asm zp.asm hgr.asm rs.asm matrix.asm encode.asm \
           place.asm format.asm tables.asm
 
-.PHONY: all clean labels
+DISK    = qrdemo.po
+VOLUME  = /QRDEMO
+STARTUP = STARTUP\#FC0801
 
-all: $(BIN)
+.PHONY: all demo clean labels
+
+all: $(BIN) demo
 
 $(BIN): $(DEPS)
 	$(ACME) -f plain -o $(BIN) --setpc $(PC) $(SRC)
@@ -19,5 +23,10 @@ $(BIN): $(DEPS)
 labels: $(DEPS)
 	$(ACME) -f plain -o $(BIN) --setpc $(PC) --labeldump labels.txt $(SRC)
 
+demo: $(DISK)
+	python3 tokenize_bas.py
+	cadius DELETEFILE $(DISK) $(VOLUME)/STARTUP
+	cadius ADDFILE $(DISK) $(VOLUME) $(STARTUP)
+
 clean:
-	rm -f $(BIN) labels.txt
+	rm -f $(BIN) labels.txt $(STARTUP)

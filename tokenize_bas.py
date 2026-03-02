@@ -455,7 +455,7 @@ DEMO_PROGRAM_LINES = [
 
 
 if __name__ == '__main__':
-    output_file = sys.argv[1] if len(sys.argv) > 1 else '/tmp/prodos_disk/STARTUP'
+    output_file = sys.argv[1] if len(sys.argv) > 1 else 'STARTUP#FC0801'
     os.makedirs(os.path.dirname(os.path.abspath(output_file)), exist_ok=True)
 
     print(f"Tokenizing {len(DEMO_PROGRAM_LINES)} lines...")
