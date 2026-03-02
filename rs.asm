@@ -3,19 +3,23 @@
 ; Per QR Code Standard ISO 18004. Alpha = 2 = primitive element.
 ;
 ; RAM tables (built by GF_BUILD_TABLES at startup):
-;   GF_LOG  @ $9F00  (256B)  GF_LOG[v] = discrete log of v
+;   GF_LOG  @ $8000  (256B)  GF_LOG[v] = discrete log of v
 ;                            GF_LOG[0] = $FF (undefined sentinel)
-;   GF_ALOG @ $A000  (256B)  GF_ALOG[i] = alpha^i
+;   GF_ALOG @ $8100  (256B)  GF_ALOG[i] = alpha^i
 ;                            GF_ALOG[255] = 1 (wrap alias = GF_ALOG[0])
 ;
 ; Working buffers:
-;   RS_GENPOLY @ $A100  (31B)  generator polynomial coefficients
-;   RS_REM     @ $A120  (30B)  remainder accumulator / EC codewords
+;   RS_GENPOLY @ $8200  (31B)  generator polynomial coefficients
+;   RS_REM     @ $8220  (30B)  remainder accumulator / EC codewords
+;
+; All scratch buffers use $7100-$82FF (free RAM between QR binary and ProDOS).
+; BASIC.SYSTEM loads at $2000-$5FFF on ProDOS BASIC 48K systems.
+; The trampoline+string data uses $7000-$70FF, so $7100+ is safe.
 
-GF_LOG     = $9F00
-GF_ALOG    = $A000
-RS_GENPOLY = $A100
-RS_REM     = $A120
+GF_LOG     = $8000
+GF_ALOG    = $8100
+RS_GENPOLY = $8200
+RS_REM     = $8220
 
 ; ── GF_BUILD_TABLES ──────────────────────────────────────────────
 ; Build GF_LOG and GF_ALOG in RAM. Call once at startup.
