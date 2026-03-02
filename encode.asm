@@ -1,7 +1,10 @@
 ; encode.asm — Version selection, data encoding, RS block dispatch, interleaving
 ; Produces the complete interleaved codeword stream in CODEWORD_BUF.
 
-CODEWORD_BUF = $9000            ; data + EC codewords for all blocks
+; All scratch buffers use $7100-$82FF (free RAM between QR binary and ProDOS).
+; BASIC.SYSTEM loads at $2000-$5FFF on ProDOS BASIC 48K systems.
+; QR.BIN ends at $6ECA, trampoline uses $7000-$70FF; $7100+ is safe scratch.
+CODEWORD_BUF = $7100            ; data + EC codewords for all blocks (was $4000/$9000)
 
 ; Bit-packing state for PACK_BITS:
 ;   ZP_PTR ($06)  = write byte pointer into CODEWORD_BUF
@@ -442,26 +445,26 @@ MUL8:
 ;   data: cw0_blk0, cw0_blk1, ..., cw1_blk0, ..., extra_g2_cw
 ;   ec:   ec0_blk0, ec0_blk1, ..., ec1_blk0, ...
 ;
-; Scratch: INTERLEAVE_BUF ($A200) — max 3706 bytes, ends at $B0EA.
-;          $A1F0-$A1FA: interleave parameters.
+; Scratch: INTERLEAVE_BUF ($8300) — max 3706 bytes (only needed for V6+).
+;          $82F0-$82FA: interleave parameters.
 ; ZP usage: ZP_PTR (source), ZP_PTR2 (dest), ZP_ROW (j index),
 ;           ZP_COL (block index), ZP_TMP, ZP_TMP2, ZP_CBIT, ZP_BITPOS
 ;
 ; Clobbers: A, X, Y, ZP_TMP, ZP_TMP2, ZP_PTR, ZP_PTR2,
 ;           ZP_CBIT, ZP_BITPOS, ZP_ROW, ZP_COL
 
-INTERLEAVE_BUF  = $A200
-QI_B1           = $A1F0  ; b1 (group 1 block count)
-QI_B2           = $A1F1  ; b2 (group 2 block count)
-QI_D1           = $A1F2  ; d1 (group 1 data codewords per block)
-QI_D2           = $A1F3  ; d2 (group 2 data codewords per block)
-QI_ECPB         = $A1F4  ; EC codewords per block
-QI_BLKSZ1       = $A1F5  ; (unused/repurposed; kept for label compat)
-QI_BLKSZ2       = $A1F6  ; (unused/repurposed; kept for label compat)
-QI_MAXD         = $A1F7  ; max data per block = d2 (if b2>0) else d1
-QI_NBLK         = $A1F8  ; total block count = b1 + b2
-QI_G1END_LO     = $A1F9  ; lo byte: EC base = CODEWORD_BUF + total_data
-QI_G1END_HI     = $A1FA  ; hi byte: EC base = CODEWORD_BUF + total_data
+INTERLEAVE_BUF  = $8300   ; was $5200/$A200 — only used for V6+ multi-block (not in this demo)
+QI_B1           = $82F0   ; b1 (group 1 block count) — was $51F0
+QI_B2           = $82F1   ; b2 (group 2 block count) — was $51F1
+QI_D1           = $82F2   ; d1 (group 1 data codewords per block) — was $51F2
+QI_D2           = $82F3   ; d2 (group 2 data codewords per block) — was $51F3
+QI_ECPB         = $82F4   ; EC codewords per block — was $51F4
+QI_BLKSZ1       = $82F5   ; (unused/repurposed; kept for label compat) — was $51F5
+QI_BLKSZ2       = $82F6   ; (unused/repurposed; kept for label compat) — was $51F6
+QI_MAXD         = $82F7   ; max data per block = d2 (if b2>0) else d1 — was $51F7
+QI_NBLK         = $82F8   ; total block count = b1 + b2 — was $51F8
+QI_G1END_LO     = $82F9   ; lo byte: EC base = CODEWORD_BUF + total_data — was $51F9
+QI_G1END_HI     = $82FA   ; hi byte: EC base = CODEWORD_BUF + total_data — was $51FA
 
 QR_INTERLEAVE:
         ; Single-block versions (V1-5) need no interleaving:

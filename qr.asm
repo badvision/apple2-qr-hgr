@@ -12,14 +12,20 @@
 ;            carry set   = error (A = $FF: data too long for any version)
 ;
 ; RAM layout (outside the binary, used at runtime):
-;   $9000-$9EFF  CODEWORD_BUF  (3840B codeword scratch)
-;   $9F00-$9FFF  GF_LOG        (256B, built by GF_BUILD_TABLES)
-;   $A000-$A0FF  GF_ALOG       (256B, built by GF_BUILD_TABLES)
-;   $A100-$A11F  RS_GENPOLY    (31B, built by RS_GEN_POLY)
-;   $A120-$A13F  RS_REM        (30B, RS remainder)
-;   $A150-$A160  alignment scratch (IS_ALIGN_MODULE, DRAW_ALIGNMENT)
-;   $2000-$3FFF  HGR page 1 (output A)
-;   $4000-$5FFF  HGR page 2 (output B)
+;   All scratch buffers use $7100-$83FF (free RAM between QR.BIN and ProDOS).
+;   BASIC.SYSTEM loads at $2000-$5FFF on ProDOS BASIC 48K Apple IIe systems.
+;   QR.BIN occupies $6000-$6ECA; trampoline uses $7000-$70FF.
+;   $7100-$BEFF is uninitialized free RAM safe for scratch use.
+;
+;   $7100-$7FFF  CODEWORD_BUF  (3840B codeword scratch)
+;   $8000-$80FF  GF_LOG        (256B, built by GF_BUILD_TABLES)
+;   $8100-$81FF  GF_ALOG       (256B, built by GF_BUILD_TABLES)
+;   $8200-$821E  RS_GENPOLY    (31B, built by RS_GEN_POLY)
+;   $8220-$823D  RS_REM        (30B, RS remainder)
+;   $8250-$8256  alignment scratch (IS_ALIGN_MODULE, DRAW_ALIGNMENT)
+;   $82F0-$82FA  interleave parameters (QR_INTERLEAVE/VERSION_INFO)
+;   $8300+       INTERLEAVE_BUF (V6+ multi-block only, not used in this demo)
+;   $2000-$3FFF  HGR page 1 (output — always used)
 
         * = $6000               ; entire binary loads at $6000
 
@@ -72,6 +78,14 @@ QR_GENERATE:
         ; Step 11: Write version information (V7+)
         JSR     VERSION_INFO
 
+        ; Return to caller with carry clear (success).
+        ; NOTE: No JSR to any ROM text-mode restore routine here.
+        ; $FB39 (Apple IIe firmware) is NOT a SETTXT equivalent — it is a
+        ; firmware init path that ends in JMP $C100 (slot 1 ROM) and never
+        ; returns.  Calling it from here would cause CALL 24576 from
+        ; Applesoft BASIC to hang; the next BASIC statement would never run.
+        ; Callers that need TEXT mode should call SETTXT ($FB36) themselves
+        ; after the JSR QR_GENERATE returns.
         CLC
         RTS
 .qg_err:

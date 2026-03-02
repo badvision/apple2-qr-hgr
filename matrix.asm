@@ -7,11 +7,11 @@
 ; ALN_BASE must be in zero page (required for (ptr),Y indirect addressing).
 ; $0A-$0B: safe (H2/V2 ROM scratch; we never call HPLOT or Sweet-16).
 ALN_BASE   = $0A                ; 2B ZP: lo/hi pointer into ALN_DATA positions
-ALN_COUNT  = $A150              ; count of position values for this version
-ALN_CR     = $A153              ; center row candidate
-ALN_CC     = $A154              ; center col candidate
-ALN_IDX_I  = $A155              ; outer loop index
-ALN_IDX_J  = $A156              ; inner loop index
+ALN_COUNT  = $8250              ; count of position values for this version (was $5150)
+ALN_CR     = $8253              ; center row candidate (was $5153)
+ALN_CC     = $8254              ; center col candidate (was $5154)
+ALN_IDX_I  = $8255              ; outer loop index (was $5155)
+ALN_IDX_J  = $8256              ; inner loop index (was $5156)
 
 ; ── IS_FUNC_MODULE ───────────────────────────────────────────────
 ; Test whether (ZP_ROW, ZP_COL) is a QR reserved function module.

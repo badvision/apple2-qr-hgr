@@ -264,11 +264,11 @@ VERSION_INFO:
         ; INVERT_PIXEL clobbers: A, ZP_TMP ($FB), ZP_TMP2 ($FC), ZP_PTR ($06-$07).
         ; Does NOT clobber: ZP_ROW ($CE), ZP_COL ($CF), ZP_BITPOS ($FD-FE), ZP_CBIT ($FA).
         ; Use scratch area $A1F0-$A1F1 (safe: QR_INTERLEAVE has already completed).
-        ; VI_ROWOFF ($A1F0) = row_offset (i mod 6)
-        ; VI_COLBASE ($A1F1) = SIZE-11+col_offset (placed into col for top-right)
+        ; VI_ROWOFF ($51F0) = row_offset (i mod 6) — reuses QI_B1 scratch (safe: interleave done)
+        ; VI_COLBASE ($51F1) = SIZE-11+col_offset  — reuses QI_B2 scratch (was $A1F0/$A1F1)
 
-VI_ROWOFF    = $A1F0
-VI_COLBASE   = $A1F1
+VI_ROWOFF    = $82F0
+VI_COLBASE   = $82F1
 
         ; Save shift register and i across INVERT_PIXEL calls:
         LDA     ZP_BITPOS
@@ -301,6 +301,7 @@ VI_COLBASE   = $A1F1
         ADC     ZP_TMP2         ; A = SIZE-11 + (i mod 3)
         STA     VI_COLBASE      ; col for top-right; row for bottom-left
         STX     VI_ROWOFF       ; row for top-right (i/3); col for bottom-left
+
 
         ; ── Top-right: row = i/3, col = SIZE-11+(i mod 3) ──
         LDX     VI_ROWOFF

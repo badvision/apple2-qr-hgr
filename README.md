@@ -9,7 +9,7 @@ HGR display without any host-side processing. Key properties:
 
 - QR versions 1–40, EC level L, mask pattern 0
 - Output renders to HGR page 1 (`$2000`) or HGR page 2 (`$4000`)
-- Binary is **3779 bytes** (~3.7 KB), loads at `$6000`–`$6EC2`
+- Binary is **3788 bytes** (~3.7 KB), loads at `$6000`–`$6ECB`
 - Supports up to **2953 bytes** of input data (V40 capacity at EC level L)
 - Reed-Solomon error correction computed entirely in 6502 code using GF(256)
 
@@ -26,6 +26,25 @@ HGR display without any host-side processing. Key properties:
 ![V40 QR code on Apple II HGR screen](examples/hgr_screen_v40.png)
 
 *2860-byte payload encoded as a V40 (177×177) QR code, nearly filling the entire Apple II HGR screen.*
+
+## Demo Disk
+
+`qrdemo.po` is a bootable 140 KB ProDOS disk image. It contains PRODOS, BASIC.SYSTEM,
+`QR.BIN` (loaded at `$6000`), and a BASIC program (`STARTUP`) that auto-runs four demos:
+
+- "HELLO WORLD" (short)
+- GitHub repo URL (medium)
+- A longer string
+- The BASIC program itself, self-encoded as binary data
+
+Run it in any Apple IIe emulator — Jace, AppleWin, MAME, etc.
+
+To rebuild the demo disk or create a custom one, use `tokenize_bas.py` to convert a
+plain-text Applesoft BASIC listing into a ProDOS-compatible `.BAS` binary:
+
+```
+python3 tokenize_bas.py startup.bas STARTUP.BAS
+```
 
 ## Building
 
@@ -72,6 +91,10 @@ BCS error     ; carry set = data too long
 
 ### Applesoft BASIC Setup (via POKE + CALL)
 
+Store input data somewhere safe — `$0300`–`$05FF` is a good scratch area that does not
+overlap BASIC, the HGR pages, `QR.BIN`, or the QR scratch buffers. Then set the
+zero-page parameters and call `$6000` (`CALL 24576`).
+
 ```basic
 10  REM Store string at $0300
 20  FOR I = 0 TO 4: POKE 768+I, ASC(MID$("HELLO",I+1,1)): NEXT I
@@ -81,31 +104,47 @@ BCS error     ; carry set = data too long
 60  CALL 24576                  : REM JSR $6000
 ```
 
-## Direct execution via Monitor
+A reusable string-encode subroutine (put input in `A$`, call `GOSUB 1000`):
 
-Load the program, set up the zero-page registers and start it.  This example sets the data starting at $300, 5 bytes long, using hires page 1:
+```basic
+1000 L = LEN(A$)
+1010 FOR I = 1 TO L
+1020 POKE 767+I, ASC(MID$(A$,I,1))
+1030 NEXT I
+1040 POKE 235,0: POKE 236,3
+1050 POKE 237,L: POKE 238,0
+1060 POKE 239,0
+1070 CALL 24576
+1080 RETURN
+```
+
+## Direct Execution via Monitor
+
+Load the program, set up the zero-page registers and start it. This example sets the
+data starting at `$300`, 5 bytes long, using HGR page 1:
 
 ```
 ]BLOAD QR.BIN,A$6000
 ]CALL-151
 *EB:0 3 5 0 0
 *300:68 65 6C 6C 6F
-*6000G      ; from monitor, with ZP already set
+*6000G
 ```
 
 ## Memory Layout
 
-| Region             | Address Range     | Size   | Description                              |
-|--------------------|-------------------|--------|------------------------------------------|
-| Code + tables      | `$6000`–`$6EC2`   | 3779 B | Assembled binary (load here)             |
-| HGR page 1         | `$2000`–`$3FFF`   | 8 KB   | Output when `ZP_PAGE = 0`                |
-| HGR page 2         | `$4000`–`$5FFF`   | 8 KB   | Output when `ZP_PAGE = 1`                |
-| Codeword buffer    | `$9000`–`$9EFF`   | 3840 B | Data + EC codewords (runtime scratch)    |
-| GF(256) log table  | `$9F00`–`$9FFF`   | 256 B  | Built at runtime by `GF_BUILD_TABLES`    |
-| GF(256) antilog    | `$A000`–`$A0FF`   | 256 B  | Built at runtime by `GF_BUILD_TABLES`    |
-| RS generator poly  | `$A100`–`$A11F`   | 32 B   | Built at runtime by `RS_GEN_POLY`        |
-| RS remainder       | `$A120`–`$A13F`   | 32 B   | Working buffer for `RS_ENCODE_BLOCK`     |
-| Interleave scratch | `$A200`–`$B0EA`   | ~3.7 KB| Used by `QR_INTERLEAVE` (V6+ only)       |
+| Region              | Address Range     | Size    | Description                             |
+|---------------------|-------------------|---------|-----------------------------------------|
+| Input data scratch  | `$0300`–`$05FF`   | 768 B   | Recommended area for caller's data      |
+| Applesoft BASIC     | `$0800`–          | —       | BASIC program lives here                |
+| HGR page 1          | `$2000`–`$3FFF`   | 8 KB    | Output when `ZP_PAGE = 0`               |
+| HGR page 2          | `$4000`–`$5FFF`   | 8 KB    | Output when `ZP_PAGE = 1` / BASIC.SYSTEM|
+| QR.BIN              | `$6000`–`$6ECB`   | 3788 B  | Assembled binary (load here)            |
+| QR scratch buffers  | `$7100`–`$8300`   | ~4.4 KB | GF tables, codeword buffer, etc.        |
+
+> **Note:** HGR page 2 and BASIC.SYSTEM share `$4000`–`$5FFF`. If you use `ZP_PAGE = 1`
+> (page 2 output) you must reload BASIC.SYSTEM afterward, or call `QR_GENERATE` before
+> launching BASIC.SYSTEM.
 
 ### Zero-Page Usage
 
@@ -142,12 +181,12 @@ the smallest version that fits; sets carry on overflow. Sets `ZP_SIZE = 4*VER + 
 
 ### 2. GF(256) Table Construction — `GF_BUILD_TABLES`
 
-Builds 256-entry log and antilog tables into `$9F00` and `$A000` at runtime.
+Builds 256-entry log and antilog tables into the scratch area at runtime.
 Field: GF(2^8) with primitive polynomial `x^8+x^4+x^3+x^2+1` (0x11D), generator α = 2.
 
 ### 3. Data Encoding — `QR_ENCODE_DATA`
 
-Produces the data codeword stream in `CODEWORD_BUF` (`$9000`):
+Produces the data codeword stream in `CODEWORD_BUF`:
 
 - **Mode indicator**: 4 bits — `0100` (byte mode)
 - **Character count**: 8 bits for V1–9, 16 bits for V10–40
@@ -170,7 +209,7 @@ data bytes in `CODEWORD_BUF`.
 
 No-op for V1–5 (single block). For V6+, interleaves data bytes and then EC bytes from
 all blocks into the final sequence required by the QR spec, writing to `INTERLEAVE_BUF`
-(`$A200`) then copying back to `CODEWORD_BUF`.
+then copying back to `CODEWORD_BUF`.
 
 ### 6. HGR Initialization — `HGR_INIT`
 
@@ -224,23 +263,25 @@ the `ROW_OFS_LO` / `ROW_OFS_HI` tables.
 
 Field: GF(2^8), irreducible polynomial `x^8 + x^4 + x^3 + x^2 + 1` (0x11D), generator α = 2.
 
-Log and antilog (exp) tables are computed at runtime into `$9F00` and `$A000` to avoid
+Log and antilog (exp) tables are computed at runtime into the scratch area to avoid
 512 bytes of table data in the binary. Multiplication uses the identity
 `a * b = alog[(log[a] + log[b]) mod 255]` with special-casing for zero operands.
 
 ## Source File Map
 
-| File          | Contents                                                        |
-|---------------|-----------------------------------------------------------------|
-| `qr.asm`      | Entry point (`QR_GENERATE`), pipeline sequencing, `QR_RS_ALL_BLOCKS` |
-| `zp.asm`      | Zero-page equates (no bytes emitted)                            |
-| `hgr.asm`     | `HGR_INIT`, `INVERT_PIXEL`, `HGR_FILLROW`                       |
-| `rs.asm`      | `GF_BUILD_TABLES`, `GF_MUL`, `RS_GEN_POLY`, `RS_ENCODE_BLOCK`, `RS_COPY_EC` |
-| `matrix.asm`  | `IS_FUNC_MODULE`, `IS_ALIGN_MODULE`, `DRAW_FINDER`, `DRAW_FINDERS`, `DRAW_TIMING`, `DRAW_ALIGNMENT`, `DRAW_DARKMOD` |
-| `encode.asm`  | `QR_SELECT_VER`, `PACK_BITS`, `QR_ENCODE_DATA`, `MUL8`, `QR_INTERLEAVE` |
-| `place.asm`   | `PLACE_DATA`, zigzag scan with mask 0                           |
-| `format.asm`  | `FORMAT_INFO`, `VERSION_INFO`                                   |
-| `tables.asm`  | `ROW_OFS_LO/HI`, `CAP_TABLE`, `BLK_PARAMS`, `ALN_IDX`, `ALN_DATA`, `VER_INFO_WORDS`, `FMT_INFO_L` |
+| File              | Contents                                                        |
+|-------------------|-----------------------------------------------------------------|
+| `qr.asm`          | Entry point (`QR_GENERATE`), pipeline sequencing, `QR_RS_ALL_BLOCKS` |
+| `zp.asm`          | Zero-page equates (no bytes emitted)                            |
+| `hgr.asm`         | `HGR_INIT`, `INVERT_PIXEL`, `HGR_FILLROW`                       |
+| `rs.asm`          | `GF_BUILD_TABLES`, `GF_MUL`, `RS_GEN_POLY`, `RS_ENCODE_BLOCK`, `RS_COPY_EC` |
+| `matrix.asm`      | `IS_FUNC_MODULE`, `IS_ALIGN_MODULE`, `DRAW_FINDER`, `DRAW_FINDERS`, `DRAW_TIMING`, `DRAW_ALIGNMENT`, `DRAW_DARKMOD` |
+| `encode.asm`      | `QR_SELECT_VER`, `PACK_BITS`, `QR_ENCODE_DATA`, `MUL8`, `QR_INTERLEAVE` |
+| `place.asm`       | `PLACE_DATA`, zigzag scan with mask 0                           |
+| `format.asm`      | `FORMAT_INFO`, `VERSION_INFO`                                   |
+| `tables.asm`      | `ROW_OFS_LO/HI`, `CAP_TABLE`, `BLK_PARAMS`, `ALN_IDX`, `ALN_DATA`, `VER_INFO_WORDS`, `FMT_INFO_L` |
+| `qrdemo.po`       | Bootable ProDOS disk image with four canned demos               |
+| `tokenize_bas.py` | Tokenizes plain-text Applesoft BASIC listings to ProDOS BAS binaries |
 
 ## Limitations
 
