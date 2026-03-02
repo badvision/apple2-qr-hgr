@@ -39,6 +39,13 @@ HGR display without any host-side processing. Key properties:
 
 Run it in any Apple IIe emulator — Jace, AppleWin, MAME, etc.
 
+**Try it now** (boots automatically in your browser — links work once the PR merges to `main`):
+
+[![Run in Apple2TS](https://img.shields.io/badge/Run%20in-Apple2TS-blue)](https://apple2ts.com/#https://raw.githubusercontent.com/badvision/apple2-qr-hgr/main/qrdemo.po)
+[![Run in Apple2js](https://img.shields.io/badge/Run%20in-Apple2js-green)](https://www.scullinsteel.com/apple2/#https://raw.githubusercontent.com/badvision/apple2-qr-hgr/main/qrdemo.po)
+
+Both emulators fetch `qrdemo.po` directly from the `main` branch and boot it automatically.
+
 To rebuild the demo disk or create a custom one, use `tokenize_bas.py` to convert a
 plain-text Applesoft BASIC listing into a ProDOS-compatible `.BAS` binary:
 
