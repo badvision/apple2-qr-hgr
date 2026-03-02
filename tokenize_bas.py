@@ -162,6 +162,11 @@ def tokenize_line_content(text):
 
     ProDOS BASIC extensions (BLOAD, BSAVE, CATALOG, etc.) are stored as
     plain ASCII since they are not in the standard ROM token table.
+
+    Spaces outside of string literals are stripped (not emitted as $20 bytes).
+    The Apple II LIST routine reconstructs spacing from token context, so
+    stripped spaces display correctly but are not stored in the token stream.
+    Spaces INSIDE quoted strings are preserved verbatim.
     """
     result = bytearray()
     i = 0
@@ -180,6 +185,15 @@ def tokenize_line_content(text):
         if ch == '"':
             in_string = True
             result.append(ord(ch))
+            i += 1
+            continue
+
+        # Strip spaces outside of string literals.
+        # Applesoft LIST reconstructs spacing from token context, so programs
+        # that contain no space bytes still LIST with correct spacing. Storing
+        # space bytes outside strings causes SYNTAX ERROR at RUN time in some
+        # cases (e.g. around operators in expressions, after POKE token, etc.)
+        if ch == ' ':
             i += 1
             continue
 
