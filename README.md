@@ -13,6 +13,14 @@ HGR display without any host-side processing. Key properties:
 - Supports up to **2953 bytes** of input data (V40 capacity at EC level L)
 - Reed-Solomon error correction computed entirely in 6502 code using GF(256)
 
+## Try it now!
+
+These links boot automatically in your browser:
+
+Apple2TS courtesy of Chris Torrence: [![Run in Apple2TS](https://img.shields.io/badge/Run%20in-Apple2TS-blue)](https://apple2ts.com/?color=white#https://raw.githubusercontent.com/badvision/apple2-qr-hgr/main/qrdemo.po)
+
+Apple2JS courtesy of Scullin Steel: [![Run in Apple2js](https://img.shields.io/badge/Run%20in-Apple2js-green)](https://www.scullinsteel.com/apple2/#https://raw.githubusercontent.com/badvision/apple2-qr-hgr/main/qrdemo.po)
+
 ## Examples
 
 ### V2 — Small QR code (up to 32 bytes)
@@ -38,13 +46,6 @@ HGR display without any host-side processing. Key properties:
 - The BASIC program itself, self-encoded as binary data
 
 Run it in any Apple IIe emulator — Jace, AppleWin, MAME, etc.
-
-**Try it now** (boots automatically in your browser — links work once the PR merges to `main`):
-
-[![Run in Apple2TS](https://img.shields.io/badge/Run%20in-Apple2TS-blue)](https://apple2ts.com/?color=white#https://raw.githubusercontent.com/badvision/apple2-qr-hgr/main/qrdemo.po)
-[![Run in Apple2js](https://img.shields.io/badge/Run%20in-Apple2js-green)](https://www.scullinsteel.com/apple2/#https://raw.githubusercontent.com/badvision/apple2-qr-hgr/main/qrdemo.po)
-
-Both emulators fetch `qrdemo.po` directly from the `main` branch and boot it automatically.
 
 To rebuild the demo disk or create a custom one, use `tokenize_bas.py` to convert a
 plain-text Applesoft BASIC listing into a ProDOS-compatible `.BAS` binary:
