@@ -400,7 +400,7 @@ DEMO_PROGRAM_LINES = [
     "100 HOME",
     "110 PRINT \"QR CODE DEMO - PRESS A KEY FOR EACH\"",
     "120 PRINT \"--------------------------------------\"",
-    "130 POKE 49168,0:GET K$",
+    "130 REM EACH QR HAS ITS OWN KEYPRESS GATE",
     "200 REM --- TEST 1: SHORT STRING",
     "210 A$ = \"HELLO WORLD\"",
     "220 GOSUB 9000",
@@ -412,6 +412,8 @@ DEMO_PROGRAM_LINES = [
     "420 GOSUB 9000",
     "500 REM --- TEST 4: SELF-ENCODE PROGRAM",
     "510 HOME : PRINT \"SELF-ENCODING BASIC PROGRAM...\"",
+    "511 PRINT \"PRESS ANY KEY\": POKE 49168,0:GET K$",
+    "512 PRINT \"GENERATING...\"",
     # L = program end - program start = VARTAB - $0800
     "520 L = PEEK(105) + PEEK(106) * 256 - 2048",
     # Store program bytes: SRC = $0800, LEN = L, PAGE = 0
@@ -441,7 +443,9 @@ DEMO_PROGRAM_LINES = [
     "9060 POKE 28706,L",
     "9061 POKE 28707,0",
     "9070 POKE 28708,0",
-    "9075 TEXT : HOME : PRINT A$ : PRINT \"GENERATING...\"",
+    "9075 TEXT : HOME : PRINT A$",
+    "9076 PRINT \"PRESS ANY KEY\": POKE 49168,0:GET K$",
+    "9077 PRINT \"GENERATING...\"",
     "9080 CALL 28672",
     "9090 POKE 49168,0:GET K$",
     "9100 TEXT : HOME",
