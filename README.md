@@ -99,9 +99,9 @@ BCS error     ; carry set = data too long
 
 ### Applesoft BASIC Setup (via POKE + CALL)
 
-Store input data somewhere safe — `$0300`–`$05FF` is a good scratch area that does not
+Store input data somewhere safe — `$0300`–`$03CF` is a good scratch area that does not
 overlap BASIC, the HGR pages, `QR.BIN`, or the QR scratch buffers. Then set the
-zero-page parameters and call `$6000` (`CALL 24576`).
+zero-page parameters and call `$6000` (`CALL 24576`).  If you want to encode a larger set of data (up to roughly 2.5kb) then you might consider HGR Page 2 or somewhere below $C000 (as long as you're not stepping on the QR code generator.)  When in doubt, consult a handy memory map reference such as this one: http://apple2.guidero.us/doku.php/mg_notes/general/mem_map 
 
 ```basic
 10  REM Store string at $0300
