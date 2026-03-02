@@ -72,6 +72,14 @@ QR_GENERATE:
         ; Step 11: Write version information (V7+)
         JSR     VERSION_INFO
 
+        ; Return to caller with carry clear (success).
+        ; NOTE: No JSR to any ROM text-mode restore routine here.
+        ; $FB39 (Apple IIe firmware) is NOT a SETTXT equivalent — it is a
+        ; firmware init path that ends in JMP $C100 (slot 1 ROM) and never
+        ; returns.  Calling it from here would cause CALL 24576 from
+        ; Applesoft BASIC to hang; the next BASIC statement would never run.
+        ; Callers that need TEXT mode should call SETTXT ($FB36) themselves
+        ; after the JSR QR_GENERATE returns.
         CLC
         RTS
 .qg_err:
